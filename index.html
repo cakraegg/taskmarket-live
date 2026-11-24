@@ -204,7 +204,7 @@
         <h3>Endpoints used</h3>
         <ul class="mono-list" id="endpointList"></ul>
         <h3 class="sub-h">Refresh &amp; cache</h3>
-        <p>Data is fetched <strong>server-side</strong> by a scheduled GitHub Actions workflow (<code>.github/workflows/refresh.yml</code>) every hour, written to a static <code>data/data.json</code>, and served as a static file. The browser never calls <code>api.taskmarket.dev</code> directly &mdash; the API blocks cross-origin browser requests, so this is the only way the page can work. The static file is effectively cached for the hour between builds.</p>
+        <p>Data is fetched <strong>server-side</strong> every hour by a scheduled job that runs <code>node scripts/fetch-data.mjs</code>, writes the result to a static <code>data/data.json</code>, and pushes it to this repo &mdash; the browser never calls <code>api.taskmarket.dev</code> directly, because the API blocks cross-origin browser requests. The same refresh is available as a GitHub Actions workflow (<code>.github/workflows/refresh.yml</code>, cron <code>0 * * * *</code>; its full YAML is in the README) for anyone self-hosting the site. The static file is effectively cached for the hour between refreshes.</p>
       </div>
       <div class="panel">
         <h3>What the API actually returns</h3>
