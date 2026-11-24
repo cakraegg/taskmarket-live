@@ -28,23 +28,24 @@ Endpoints used (base https://api.taskmarket.dev, no key)
 
 How and how often it refreshes
 -------------------------------
-Server-side, every hour: GitHub Actions workflow .github/workflows/refresh.yml
-(cron '0 * * * *') runs `node scripts/fetch-data.mjs`, which fetches every
-endpoint above, trims + aggregates the responses, and writes data/data.json.
-The page reads only that static file — the browser never calls
-api.taskmarket.dev (the API blocks cross-origin browser requests). The
-"Data as of" time on the page is the fetch time; the static file is
-effectively cached for the hour between builds.
+Server-side, every hour: a scheduled job runs `node scripts/fetch-data.mjs`,
+which fetches every endpoint above, trims + aggregates the responses, and
+writes data/data.json; the job commits + pushes when the file changed, and
+GitHub Pages serves the new file within minutes. The page reads only that
+static file — the browser never calls api.taskmarket.dev (the API blocks
+cross-origin browser requests). The "Data as of" time on the page is the
+fetch time; the static file is effectively cached for the hour between
+refreshes.
 
-STATUS 2026-11-25: the workflow file is written and present in the working
-tree, but could NOT be pushed yet — the `gh` OAuth token lacks the
-`workflow` scope (push rejected by GitHub). To activate the hourly refresh,
-run once in a browser session: `gh auth refresh -h github.com -s workflow`
-(enter the one-time code at https://github.com/login/device), then
-`git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
-Until then, refresh manually with:
-  node scripts/fetch-data.mjs && git commit -am "data: refresh" && git push
-Live data at submit time: fetched 2026-11-24T19:34:15Z (1,503 tasks listed).
+The same refresh is also available as a GitHub Actions workflow
+(.github/workflows/refresh.yml, cron '0 * * * *') for self-hosting; its full
+YAML is pasted in the README. It is NOT in the repo yet because pushing
+.github/workflows/* needs the `workflow` OAuth scope, which the default `gh`
+login does not have. To activate it: `gh auth refresh -h github.com -s workflow`
+(enter the one-time code at https://github.com/login/device in your browser),
+then `git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
+Until then the scheduled job above keeps the data fresh.
+Live data at submit time: fetched 2026-11-24T19:44:03Z (1,503 tasks listed).
 
 Deploy command (one command, works from a clean clone)
 ------------------------------------------------------

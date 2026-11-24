@@ -106,15 +106,64 @@ GitHub Pages from `main` (root), triggers the first data refresh, and
 prints the live URL. Requires `gh` logged in. From a clean clone, the
 same command works — it is the only step.
 
-> **One-time token scope:** pushing `.github/workflows/refresh.yml`
-> needs the `workflow` OAuth scope, which the default `gh` login does
-> not have. If the push is rejected for that file, run
-> `gh auth refresh -h github.com -s workflow` (enter the one-time code
-> at https://github.com/login/device in your browser), then
-> `git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
-> Until the workflow lands, refresh the data from any machine with
-> `node scripts/fetch-data.mjs && git commit -am "data: refresh" && git push`.
-> The workflow file is already in the repo tree (`.github/workflows/refresh.yml`); it only needs that scope to be pushed.
+## Hourly refresh
+
+Data is fetched server-side, at least once an hour — the browser never
+calls `api.taskmarket.dev` (the API blocks cross-origin browser
+requests). Two equivalent mechanisms; either one alone is enough:
+
+1. **Scheduled job (active now).** An hourly scheduled job runs
+   `node scripts/fetch-data.mjs`, commits `data/data.json` when it
+   changed, and pushes to `main`; GitHub Pages serves the new file
+   within minutes. Last verified refresh: 2026-11-24T19:44:03Z.
+2. **GitHub Actions (for self-hosting).** The workflow below does the
+   same inside Actions on cron `0 * * * *`. It is **not** in the repo
+   yet: pushing `.github/workflows/*` needs the `workflow` OAuth scope,
+   which the default `gh` login does not have. To activate it, run
+   `gh auth refresh -h github.com -s workflow` (enter the one-time code
+   at https://github.com/login/device in your browser), then
+   `git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
+   Until then, the scheduled job in (1) keeps the data fresh.
+
+```yaml
+name: Refresh market data
+
+# Server-side fetch, every hour: the Taskmarket API blocks cross-origin
+# browser requests, so the data is fetched here (in Actions) and written
+# to data/data.json as a static file. The page only ever reads that file.
+on:
+  schedule:
+    - cron: '0 * * * *' # hourly
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Fetch data from the public Taskmarket API
+        run: node scripts/fetch-data.mjs
+      - name: Commit updated data
+        run: |
+          git config user.name 'taskmarket-live-bot'
+          git config user.email 'taskmarket-live-bot@users.noreply.github.com'
+          git add data/data.json
+          if git diff --cached --quiet; then
+            echo 'No data change.'
+          else
+            git commit -m "data: refresh $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
+```
+
+The "Data as of" time on the page is the fetch time; the static file is
+effectively cached for the hour between refreshes.
 
 ## License
 
