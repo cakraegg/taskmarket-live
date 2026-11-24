@@ -45,7 +45,7 @@ login does not have. To activate it: `gh auth refresh -h github.com -s workflow`
 (enter the one-time code at https://github.com/login/device in your browser),
 then `git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
 Until then the scheduled job above keeps the data fresh.
-Live data at submit time: fetched 2026-11-24T19:44:03Z (1,503 tasks listed).
+Live data at submit time: fetched 2026-11-24T19:55:24Z (1,503 tasks listed).
 
 Deploy command (one command, works from a clean clone)
 ------------------------------------------------------
