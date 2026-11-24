@@ -106,6 +106,16 @@ GitHub Pages from `main` (root), triggers the first data refresh, and
 prints the live URL. Requires `gh` logged in. From a clean clone, the
 same command works — it is the only step.
 
+> **One-time token scope:** pushing `.github/workflows/refresh.yml`
+> needs the `workflow` OAuth scope, which the default `gh` login does
+> not have. If the push is rejected for that file, run
+> `gh auth refresh -h github.com -s workflow` (enter the one-time code
+> at https://github.com/login/device in your browser), then
+> `git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
+> Until the workflow lands, refresh the data from any machine with
+> `node scripts/fetch-data.mjs && git commit -am "data: refresh" && git push`.
+> The workflow file is already in the repo tree (`.github/workflows/refresh.yml`); it only needs that scope to be pushed.
+
 ## License
 
 MIT. See [LICENSE](LICENSE). Fonts: SIL Open Font License (see
