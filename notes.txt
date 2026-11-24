@@ -1,0 +1,77 @@
+Taskmarket Live — market visualizer for bounty TSK-BRK611AN
+===========================================================
+
+Live URL: https://cakraegg.github.io/taskmarket-live/
+Repo URL: https://github.com/cakraegg/taskmarket-live
+Bounty:   TSK-BRK611AN — "Build and host Taskmarket's live market visualizer (50 OUSD)"
+          Requester: HoloBeaconMonk. One entry per wallet/person (wallet 0x956937B9CD8838C8563Ff78Ea3FD74873fe206Bb).
+
+Stack
+-----
+Zero-dependency static site: plain HTML + CSS + vanilla JS, hand-rolled SVG
+charts. No framework, no build step, no analytics, no wallet connection,
+no third-party requests at runtime. Fonts self-hosted (Instrument Serif,
+Inter Tight, IBM Plex Mono — SIL OFL). Brand kit colours (ground #12100E,
+maroon #3A1420, panel #221E1A, cream #EFE9E2, magenta #E74079 accent).
+
+Endpoints used (base https://api.taskmarket.dev, no key)
+--------------------------------------------------------
+- /api/market/stats?chainId=4217 and ?chainId=8453
+- /api/stats/breakdowns?chainId=4217
+- /api/stats/platform-time-series?chainId=4217&range=7d|30d|90d&bucket=day
+- /api/stats/platform-time-series?chainId=4217&range=all&bucket=week
+- /api/stats/activity-heatmap?chainId=4217&range=30d&dimension=hourOfWeek
+- /api/stats/activity-heatmap?chainId=4217&range=30d&dimension=mode
+- /api/stats/activity-feed?chainId=4217&limit=50 and ?chainId=8453&limit=50
+- /api/tasks?chainId=4217|8453&status=<each of open, completed, cancelled,
+  expired, claimed, pending_approval, worker_selected>&sort=newest&limit=100&cursor=…
+
+How and how often it refreshes
+-------------------------------
+Server-side, every hour: GitHub Actions workflow .github/workflows/refresh.yml
+(cron '0 * * * *') runs `node scripts/fetch-data.mjs`, which fetches every
+endpoint above, trims + aggregates the responses, and writes data/data.json.
+The page reads only that static file — the browser never calls
+api.taskmarket.dev (the API blocks cross-origin browser requests). The
+"Data as of" time on the page is the fetch time; the static file is
+effectively cached for the hour between builds.
+
+STATUS 2026-11-25: the workflow file is written and present in the working
+tree, but could NOT be pushed yet — the `gh` OAuth token lacks the
+`workflow` scope (push rejected by GitHub). To activate the hourly refresh,
+run once in a browser session: `gh auth refresh -h github.com -s workflow`
+(enter the one-time code at https://github.com/login/device), then
+`git add .github/workflows/refresh.yml && git commit -m "Add hourly refresh workflow" && git push`.
+Until then, refresh manually with:
+  node scripts/fetch-data.mjs && git commit -am "data: refresh" && git push
+Live data at submit time: fetched 2026-11-24T19:34:15Z (1,503 tasks listed).
+
+Deploy command (one command, works from a clean clone)
+------------------------------------------------------
+  ./deploy.sh [repo-name]        # default: taskmarket-live
+
+Creates the public repo (or pushes to the existing origin), enables GitHub
+Pages from main (root), triggers the first refresh workflow, prints the live
+URL. Requires `gh` logged in. Verified from a clean clone in /tmp on
+2026-11-25 (exit 0, live URL printed).
+
+What it shows
+-------------
+Headline numbers (Tempo / Base / both); "Follow the money" flow view
+(top posters -> rewards put up -> paid out -> top winners); trends with
+metric + range switches; tasks by status/mode/actor; hour-of-week and
+mode-by-day heatmaps; distinct posters per week + concentration; the
+"swarm" of open tasks as bubbles sized by reward; live activity feed;
+five computed insights (concentration 53.4% from 5 posters, 17.6% of
+tasks died, median 24h decision window, +134% tasks WoW, peak hour
+Fri 04:00 UTC); full methods note naming every endpoint. Deep links:
+#flow #trends #breakdown #heatmap #posters #swarm #feed #insights #methods.
+Share image: og.png (1200x630).
+
+Rules compliance
+----------------
+Read-only; no wallet connect; no analytics/tracking; no guessed names
+(display names only where the API returns them, otherwise a truncated
+wallet address); every number reproducible from the API; footer states it
+was made for a paid Taskmarket bounty and is NOT an official Taskmarket
+product; no third-party logos; no invented numbers. MIT licence.
